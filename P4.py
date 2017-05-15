@@ -44,15 +44,7 @@ ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.sh
 
 
 
-test_images_path = glob.glob('test_images/test*.jpg')
-original_test_images = []
-undist_test_images = []
 
-for test_image_path in test_images_path:
-    test_image = cv2.cvtColor(cv2.imread(test_image_path),cv2.COLOR_BGR2RGB)
-    undist_test_image = cv2.undistort(test_image, mtx, dist, None, mtx)
-    undist_test_images.append(undist_test_image)
-    original_test_images.append(test_image)
 #
 # for i in range(len(original_test_images)):
 #     plt.figure(figsize=(20,10))
@@ -188,7 +180,7 @@ def draw_lane(perspective_img, undist_img, Minv):
     cv2.putText(result, ('right lane curve radius = ' + str(right_lane.radius_of_curvature) + ' m'),
                 (10, 150), font, 1, (255, 255, 255), 2)
 
-    cv2.putText(result, ('vehicle position in lane = '+str(dx)),
+    cv2.putText(result, ('vehicle position in lane = '+str(dx)+' m'),
                 (10, 200), font, 1, (255, 255, 255), 2)
 
     return result
@@ -341,8 +333,22 @@ def update_lanes(binary_warped):
     # cv2.fillPoly(window_img, np.int_([right_line_pts]), (0, 255, 0))
     # result = cv2.addWeighted(out_img, 1, window_img, 0.3, 0)
 
+    # Define conversions in x and y from pixels space to meters
+    ym_per_pix = 30 / 720  # meters per pixel in y dimension
+    xm_per_pix = 3.7 / 700  # meters per pixel in x dimension
+    y_eval = np.max(ploty)
 
+    # Fit new polynomials to x,y in world space
+    left_fit_cr = np.polyfit(ploty * ym_per_pix, left_lane.recent_xfitted * xm_per_pix, 2)
+    right_fit_cr = np.polyfit(ploty * ym_per_pix, right_lane.recent_xfitted * xm_per_pix, 2)
+    # Calculate the new radii of curvature
+    left_lane.radius_of_curvature = ((1 + (
+    2 * left_fit_cr[0] * y_eval * ym_per_pix + left_fit_cr[1]) ** 2) ** 1.5) / np.absolute(2 * left_fit_cr[0])
+    right_lane.radius_of_curvature = ((1 + (
+    2 * right_fit_cr[0] * y_eval * ym_per_pix + right_fit_cr[1]) ** 2) ** 1.5) / np.absolute(2 * right_fit_cr[0])
 
+    left_lane.line_base_pos = left_lane.recent_xfitted[-1] * xm_per_pix
+    right_lane.line_base_pos = right_lane.recent_xfitted[-1] * xm_per_pix
 
     return out_img
 
@@ -368,30 +374,48 @@ def process_image(img):
 
 from moviepy.editor import VideoFileClip
 from IPython.display import HTML
-# left_lane = Line()
-# right_lane = Line()
-# output = 'project_video_lanes.mp4'
-# clip1 = VideoFileClip("project_video.mp4")
+left_lane = Line()
+right_lane = Line()
+output = 'project_video_lanes.mp4'
+clip1 = VideoFileClip("project_video.mp4")
 
 # output = 'challenge_video_lanes.mp4'
 # clip1 = VideoFileClip("challenge_video.mp4")
-# clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-# clip.write_videofile(output, audio=False)
+clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+clip.write_videofile(output, audio=False)
 
 # HTML("""
 # <video width="960" height="540" controls>
 #   <source src="{0}">
 # </video>
 # """.format(output))
+import matplotlib.image as mpimg
 
-for org_img in original_test_images:
+
+
+
+test_images_path = glob.glob('test_images/*.jpg')
+original_test_images = []
+undist_test_images = []
+
+for test_image_path in test_images_path:
+    test_image = cv2.cvtColor(cv2.imread(test_image_path),cv2.COLOR_BGR2RGB)
+    undist_test_image = cv2.undistort(test_image, mtx, dist, None, mtx)
+
     left_lane = Line()
     right_lane = Line()
-    plt.figure(figsize=(20, 10))
-    plt.imshow(process_image(org_img))
-    plt.xlim(0, 1280)
-    plt.ylim(720, 0)
-    plt.show()
+    # plt.figure(figsize=(20, 10))
+    out = process_image(undist_test_image)
+    output_path = test_image_path.replace('test_images','output_images')
+    mpimg.imsave(output_path, out)
+
+    # plt.imshow(out)
+    # plt.xlim(0, 1280)
+    # plt.ylim(720, 0)
+    # plt.show()
+
+
+
 
 
 
