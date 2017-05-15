@@ -367,22 +367,22 @@ def process_image(img):
     else:
         # print("shouldnt be here")
         out_img = update_lanes(perspective_img)
-
+    return binary
     return draw_lane(perspective_img, undist_img, Minv)
 
 #     return out_img
 
 from moviepy.editor import VideoFileClip
 from IPython.display import HTML
-left_lane = Line()
-right_lane = Line()
-output = 'project_video_lanes.mp4'
-clip1 = VideoFileClip("project_video.mp4")
+# left_lane = Line()
+# right_lane = Line()
+# output = 'project_video_lanes.mp4'
+# clip1 = VideoFileClip("project_video.mp4")
 
 # output = 'challenge_video_lanes.mp4'
 # clip1 = VideoFileClip("challenge_video.mp4")
-clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-clip.write_videofile(output, audio=False)
+# clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+# clip.write_videofile(output, audio=False)
 
 # HTML("""
 # <video width="960" height="540" controls>
@@ -406,7 +406,7 @@ for test_image_path in test_images_path:
     right_lane = Line()
     # plt.figure(figsize=(20, 10))
     out = process_image(undist_test_image)
-    output_path = test_image_path.replace('test_images','output_images')
+    output_path = test_image_path.replace('test_images','output_images/binary')
     mpimg.imsave(output_path, out)
 
     # plt.imshow(out)
