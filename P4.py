@@ -92,7 +92,7 @@ def to_binary(image):
 
     binary = np.zeros_like(s_binary)
     # binary[(s_binary == 1)] = 1
-    # binary[(sxbinary == 1)] = 1
+    binary[(sxbinary == 1)] = 1
     # binary[(white == 255)] = 1
     binary[(mask == 255)] = 1
     # binary[(yellow == 1)] = 1
@@ -430,7 +430,7 @@ for test_image_path in test_images_path:
     plt.imshow(out)
     plt.xlim(0, 1280)
     plt.ylim(720, 0)
-    # plt.show()
+    plt.show()
 
 
 
