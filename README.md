@@ -82,12 +82,12 @@ if M is None:
 
 The result in a 720x1280 image is the following source and destination points:
 
-| Source        || Destination   | 
-|---------------||---------------| 
-| 575, 460      || 320, 0        | 
-| 203, 720      || 320, 720      |
-| 1127, 720     || 960, 720      |
-| 705, 460      || 960, 0        |
+| Source        |-------->| Destination   | 
+|---------------|-|---------------| 
+| 575, 460      |.| 320, 0        | 
+| 203, 720      |.| 320, 720      |
+| 1127, 720     |.| 960, 720      |
+| 705, 460      |.| 960, 0        |
 
 I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
 
