@@ -36,29 +36,25 @@ for fname in images_path:
 ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
 
 
-# for i in range(len(chessboards)):
-#     plt.figure(figsize=(20,10))
-#     plt.imshow(chessboards[i])
-#     plt.title('Chessboard: %d' % i)
-#     plt.show()
 
 
-
-
-#
-# for i in range(len(original_test_images)):
+# for fname in images_path:
+#     img = cv2.cvtColor(cv2.imread(fname), cv2.COLOR_BGR2RGB)
 #     plt.figure(figsize=(20,10))
 #     plt.subplot(1, 2, 1)
-#     plt.imshow(original_test_images[i])
+#     plt.imshow(img)
 #     plt.xlabel('Original Distorted image')
 #     plt.xticks([], [])
 #     plt.yticks([], [])
+#     undist_img = cv2.undistort(img, mtx, dist, None, mtx)
 #     plt.subplot(1, 2, 2)
-#     plt.imshow(undist_test_images[i])
+#     plt.imshow(undist_img)
 #     plt.xlabel('Corrected Undistorted image')
 #     plt.xticks([], [])
 #     plt.yticks([], [])
 #     plt.show()
+
+
 def to_binary(image):
 
     hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
@@ -112,18 +108,22 @@ def perspective_transform(img, M=None, src_in=None, dst_in=None):
     M_inv, src, dst = None, None, None
     if M is None:
         if src_in is None:
-            src = np.array([[600. / 1280. * img_size[1], 455. / 720. * img_size[0]],
-                            [690. / 1280. * img_size[1], 455. / 720. * img_size[0]],
-                            [1100. / 1280. * img_size[1], 720. / 720. * img_size[0]],
-                            [210. / 1280. * img_size[1], 720. / 720. * img_size[0]]], np.float32)
+            # src = np.array([[600. / 1280. * img_size[1], 455. / 720. * img_size[0]],
+            #                 [690. / 1280. * img_size[1], 455. / 720. * img_size[0]],
+            #                 [1100. / 1280. * img_size[1], 720. / 720. * img_size[0]],
+            #                 [210. / 1280. * img_size[1], 720. / 720. * img_size[0]]], np.float32)
+            src = np.array([[575. / 1280. * img_size[1], 460. / 720. * img_size[0]],
+                            [705. / 1280. * img_size[1], 460. / 720. * img_size[0]],
+                            [1127. / 1280. * img_size[1], 720. / 720. * img_size[0]],
+                            [203. / 1280. * img_size[1], 720. / 720. * img_size[0]]], np.float32)
         else:
             src = src_in
 
         if dst_in is None:
-            dst = np.array([[300. / 1280. * img_size[1], 100. / 720. * img_size[0]],
-                            [1000. / 1280. * img_size[1], 100. / 720. * img_size[0]],
-                            [1000. / 1280. * img_size[1], 720. / 720. * img_size[0]],
-                            [300. / 1280. * img_size[1], 720. / 720. * img_size[0]]], np.float32)
+            dst = np.array([[320. / 1280. * img_size[1], 100. / 720. * img_size[0]],
+                            [960. / 1280. * img_size[1], 100. / 720. * img_size[0]],
+                            [960. / 1280. * img_size[1], 720. / 720. * img_size[0]],
+                            [320. / 1280. * img_size[1], 720. / 720. * img_size[0]]], np.float32)
         else:
             dst = dst_in
 
@@ -131,7 +131,7 @@ def perspective_transform(img, M=None, src_in=None, dst_in=None):
         M_inv = cv2.getPerspectiveTransform(dst, src)
 
     perspective_img = cv2.warpPerspective(img, M, (img.shape[1], img.shape[0]), flags=cv2.INTER_LINEAR)
-    return perspective_img, M_inv
+    return perspective_img, M_inv, src, dst
 
 # Define a class to receive the characteristics of each line detection
 class Line():
@@ -367,7 +367,7 @@ def process_image(img):
     # apply binary thresholds
     binary = to_binary(undist_img)
     # apply perspective transform
-    perspective_img, Minv = perspective_transform(binary)
+    perspective_img, Minv, src, dst = perspective_transform(binary)
 
     if (left_lane.detected is False) or (right_lane.detected is False):
         out_img = find_lanes(perspective_img)
@@ -406,11 +406,9 @@ HTML("""
 # """.format(output))
 
 
+
+
 import matplotlib.image as mpimg
-
-
-
-
 test_images_path = glob.glob('test_images/*.jpg')
 original_test_images = []
 undist_test_images = []
@@ -421,17 +419,32 @@ for test_image_path in test_images_path:
 
     left_lane = Line()
     right_lane = Line()
-#     # plt.figure(figsize=(20, 10))
-    out = process_image(undist_test_image)
-#     out = to_binary(undist_test_image)
-#     output_path = test_image_path.replace('test_images','output_images/binary')
-#     mpimg.imsave(output_path, out)
 
+
+    plt.figure(figsize=(20,10))
+    plt.subplot(1, 2, 1)
+    plt.imshow(undist_test_image)
+    out, Minv, src, dst = perspective_transform(undist_test_image)
+
+    src_poly = [[src[0][0], src[1][0], src[2][0], src[3][0], src[0][0]], [src[0][1], src[1][1], src[2][1], src[3][1], src[0][1]]]
+
+    src_plot = plt.plot(src_poly[0], src_poly[1])
+    plt.xlabel('Original image')
+    plt.xticks([], [])
+    plt.yticks([], [])
+    plt.subplot(1, 2, 2)
     plt.imshow(out)
-    plt.xlim(0, 1280)
-    plt.ylim(720, 0)
-    plt.show()
 
+    dst_poly = [[dst[0][0], dst[1][0], dst[2][0], dst[3][0], dst[0][0]], [dst[0][1], dst[1][1], dst[2][1], dst[3][1], dst[0][1]]]
+
+    dst_plot = plt.plot(dst_poly[0], dst_poly[1])
+    plt.xlabel('Perspective transformed image')
+    plt.xticks([], [])
+    plt.yticks([], [])
+    plt.setp(src_plot, color='r', linewidth=2.0)
+    plt.setp(dst_plot, color='r', linewidth=2.0)
+
+    plt.show()
 
 
 
