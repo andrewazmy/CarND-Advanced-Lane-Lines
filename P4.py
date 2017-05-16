@@ -60,14 +60,11 @@ ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.sh
 #     plt.yticks([], [])
 #     plt.show()
 def to_binary(image):
-    #     hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
-    #     hsv = cv2.GaussianBlur(hsv, (5, 5), 0)
-    #     yellow = cv2.inRange(hsv,np.array((20,100,100)),np.array((30,255,255)))
 
-
-    #     white = cv2.inRange(hsv,np.array((0,0,200)),np.array((180,30,255)))
-
-    #     mask = cv2.bitwise_or(white,yellow)
+    hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
+    yellow = cv2.inRange(hsv,np.array((0,100,100)),np.array((80,255,255)))
+    white = cv2.inRange(image,np.array((200,200,200)),np.array((255,255,255)))
+    mask = cv2.bitwise_or(white,yellow)
 
 
 
@@ -90,14 +87,24 @@ def to_binary(image):
     s_thresh_min = 175
     s_thresh_max = 255
     s_binary = np.zeros_like(s_channel)
-    s_thresh = cv2.inRange(s_channel.astype('uint8'), 175, 250)
-    s_binary[(s_thresh == 255)] = 1
+    s_binary[(s_channel >= s_thresh_min) & (s_channel <= s_thresh_max)] = 1
+
 
     binary = np.zeros_like(s_binary)
-    binary[(s_binary == 1) | (sxbinary == 1)] = 1
-    #     binary[(s_binary == 1) | (sxbinary == 1) | (mask == 1)] = 1
+    # binary[(s_binary == 1)] = 1
+    # binary[(sxbinary == 1)] = 1
+    # binary[(white == 255)] = 1
+    binary[(mask == 255)] = 1
+    # binary[(yellow == 1)] = 1
 
+
+
+    # return white
+    # return mask
+    # return np.dstack((mask, mask, mask))*255.0
+    # return np.dstack((binary, binary, binary))*255.0
     return binary
+
 
 
 def perspective_transform(img, M=None, src_in=None, dst_in=None):
@@ -367,28 +374,38 @@ def process_image(img):
     else:
         # print("shouldnt be here")
         out_img = update_lanes(perspective_img)
-    return binary
+
+
+
+    # return np.dstack((binary, binary, binary))*255.0
     return draw_lane(perspective_img, undist_img, Minv)
 
 #     return out_img
 
 from moviepy.editor import VideoFileClip
 from IPython.display import HTML
-# left_lane = Line()
-# right_lane = Line()
-# output = 'project_video_lanes.mp4'
+
+output = 'project_video_lanes.mp4'
+clip1 = VideoFileClip("project_video.mp4")
+
+# output = 'project_video_binary.mp4'
 # clip1 = VideoFileClip("project_video.mp4")
 
 # output = 'challenge_video_lanes.mp4'
 # clip1 = VideoFileClip("challenge_video.mp4")
-# clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-# clip.write_videofile(output, audio=False)
 
-# HTML("""
-# <video width="960" height="540" controls>
-#   <source src="{0}">
-# </video>
+left_lane = Line()
+right_lane = Line()
+clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+clip.write_videofile(output, audio=False)
+
+HTML("""
+<video width="960" height="540" controls>
+  <source src="{0}">
+</video>
 # """.format(output))
+
+
 import matplotlib.image as mpimg
 
 
@@ -404,14 +421,15 @@ for test_image_path in test_images_path:
 
     left_lane = Line()
     right_lane = Line()
-    # plt.figure(figsize=(20, 10))
+#     # plt.figure(figsize=(20, 10))
     out = process_image(undist_test_image)
-    output_path = test_image_path.replace('test_images','output_images/binary')
-    mpimg.imsave(output_path, out)
+#     out = to_binary(undist_test_image)
+#     output_path = test_image_path.replace('test_images','output_images/binary')
+#     mpimg.imsave(output_path, out)
 
-    # plt.imshow(out)
-    # plt.xlim(0, 1280)
-    # plt.ylim(720, 0)
+    plt.imshow(out)
+    plt.xlim(0, 1280)
+    plt.ylim(720, 0)
     # plt.show()
 
 
