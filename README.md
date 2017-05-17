@@ -17,9 +17,10 @@ The goals / steps of this project are the following:
 [image2]: ./test_images/undistorted/test2.jpg "Road Transformed"
 [image3]: ./test_images/binary/test2.jpg "Binary Example"
 [image4]: ./md_images/perspective_test2.png "Warp Example"
+[image7]: ./md_images/histogram.png "histogram"
 [image5]: ./examples/color_fit_lines.jpg "Fit Visual"
 [image6]: ./output_images/test2.jpg "Output"
-[video1]: ./project_video.mp4 "Video"
+[video1]: ./project_video_lanes.mp4 "Video"
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
 
@@ -95,17 +96,22 @@ I verified that my perspective transform was working as expected by drawing the 
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+After undistorting the image, extracting binary data, and applying perspective transform, the next required step is to extract pixels that are associated to lane lines. This was done using the sliding window search, with the start point taken as the histogram peak of the lower imaege half shown in the figure below.
+![alt text][image7]
+
+Then I fit my detected lane pixels with a 2nd order polynomial as show in the below figure:
 
 ![alt text][image5]
 
+This is done in the function `find_lanes()` in the code lines 197 through 271 in `P4.py`.
+
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
-I did this in lines # through # in my code in `my_other_file.py`
+I also did this in the function `find_lanes()` in the code lines 279 through 289 in my code in `P4.py` by defining conversions in x and y from pixels space to meters, fitting new polynomials in the world space and calculating their new radii of curvature.
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+I implemented this step in lines 160 through 194 in my code in `P4.py` in the function `draw_lane()`.  Here is an example of my result on a test image:
 
 ![alt text][image6]
 
@@ -115,7 +121,7 @@ I implemented this step in lines # through # in my code in `yet_another_file.py`
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
-Here's a [link to my video result](./project_video.mp4)
+Here's a [link to my video result](./project_video_lanes.mp4)
 
 ---
 
@@ -124,3 +130,15 @@ Here's a [link to my video result](./project_video.mp4)
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
 Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+
+##### Challenges
+* The first major challenge I've faced is the binary data extraction. First, I used Sobel X operator combined with a thresholded S-channel from the HSV colour space. I implemented my first prototype with this extraction method. However, it has failed in 2 frames on the project_video file (approx. 21 and 41 sec.). Accordingly, I migrated to another method of extraction, taking into account 3 masks; white, yellow and gradient: 
+  - The white mask was extracted from and RGB colour space image within the range `(200,200,200)` to `(255,255,255)`, which perfectly detected white lane lines.
+  - The yellow mask was extracted from the HSV colour space image within the range `(0,100,100)`to `(80,255,255)`, which perfectly detected yellow lane lines.
+  - The gradient mask was extracted using the sobel operator in the X direction with thresholds `30` to `150`, which perfectly detected all vertical lines missed by the yellow and white masks due to shadows
+, which perfectly detected white lane lines. and different light conditions.
+* The second challenge was finding a way to implement the lane update function instead of executing a blind search for every frame. The `Line()` was really helpful for storing data that is accessible by every function in the pipeline.
+
+##### Further improvements 
+* The binary data extraction method used is very limited to near-perfect light condition. This is the main reason of the system failure when testing using the challenge video. A further tuned binary extraction function would definitely lead to a more robust perception.
+* Further sanity checks could help improve the tracking quality by raising a flag indicating a corrupt detected lane, initiating a new blind search.

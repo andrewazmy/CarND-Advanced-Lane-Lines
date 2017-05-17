@@ -175,11 +175,12 @@ def draw_lane(perspective_img, undist_img, Minv):
     newwarp = cv2.warpPerspective(color_warp, Minv, (undist_img.shape[1], undist_img.shape[0]))
     # Combine the result with the original image
     result = cv2.addWeighted(undist_img, 1, newwarp, 0.3, 0)
-    xm_per_pix = 3.7 / 700
-    middle = (left_lane.line_base_pos + right_lane.line_base_pos) / 2
-    veh_pos = perspective_img.shape[1] // 2
 
-    dx = (veh_pos * xm_per_pix - middle)  # Positive if on right, Negative on left
+    xm_per_pix = 3.7 / 700
+    center = (left_lane.line_base_pos + right_lane.line_base_pos) / 2
+    vehicle_pose = perspective_img.shape[1] // 2
+
+    dx = (vehicle_pose * xm_per_pix - center)  # Positive if on right, Negative on left
 
     font = cv2.FONT_HERSHEY_SIMPLEX
     cv2.putText(result, ('left lane curve radius = '+str(left_lane.radius_of_curvature) + ' m'),
@@ -197,6 +198,7 @@ def draw_lane(perspective_img, undist_img, Minv):
 def find_lanes(binary_warped):
     # left_lane.recent_xfitted
     histogram = np.sum(binary_warped[int(binary_warped.shape[0] / 2):, :], axis=0)
+    plt.plot(histogram)
     # Create an output image to draw on and  visualize the result
     out_img = np.dstack((binary_warped, binary_warped, binary_warped)) * 255
     # Find the peak of the left and right halves of the histogram
@@ -275,15 +277,15 @@ def find_lanes(binary_warped):
     out_img[nonzeroy[left_lane_inds], nonzerox[left_lane_inds]] = [255, 0, 0]
     out_img[nonzeroy[right_lane_inds], nonzerox[right_lane_inds]] = [0, 0, 255]
 
-    # Define conversions in x and y from pixels space to meters
+    # Define conversions in x and y from pixels space to meters (world space)
     ym_per_pix = 30 / 720  # meters per pixel in y dimension
     xm_per_pix = 3.7 / 700  # meters per pixel in x dimension
     y_eval = np.max(ploty)
 
-    # Fit new polynomials to x,y in world space
+    # Fitting new polynomials to x,y in world space (meters) for both lane lines
     left_fit_cr = np.polyfit(ploty * ym_per_pix, left_lane.recent_xfitted * xm_per_pix, 2)
     right_fit_cr = np.polyfit(ploty * ym_per_pix, right_lane.recent_xfitted * xm_per_pix, 2)
-    # Calculate the new radii of curvature
+    # Calculate radius of curvature for each lane
     left_lane.radius_of_curvature = ((1 + (2 * left_fit_cr[0] * y_eval * ym_per_pix + left_fit_cr[1]) ** 2) ** 1.5) / np.absolute(2 * left_fit_cr[0])
     right_lane.radius_of_curvature = ((1 + (2 * right_fit_cr[0] * y_eval * ym_per_pix + right_fit_cr[1]) ** 2) ** 1.5) / np.absolute(2 * right_fit_cr[0])
 
@@ -385,25 +387,25 @@ def process_image(img):
 from moviepy.editor import VideoFileClip
 from IPython.display import HTML
 
-output = 'project_video_lanes.mp4'
-clip1 = VideoFileClip("project_video.mp4")
-
-# output = 'project_video_binary.mp4'
+# output = 'project_video_lanes.mp4'
 # clip1 = VideoFileClip("project_video.mp4")
-
-# output = 'challenge_video_lanes.mp4'
-# clip1 = VideoFileClip("challenge_video.mp4")
-
-left_lane = Line()
-right_lane = Line()
-clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-clip.write_videofile(output, audio=False)
-
-HTML("""
-<video width="960" height="540" controls>
-  <source src="{0}">
-</video>
-# """.format(output))
+#
+# # output = 'project_video_binary.mp4'
+# # clip1 = VideoFileClip("project_video.mp4")
+#
+# # output = 'challenge_video_lanes.mp4'
+# # clip1 = VideoFileClip("challenge_video.mp4")
+#
+# left_lane = Line()
+# right_lane = Line()
+# clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+# clip.write_videofile(output, audio=False)
+#
+# HTML("""
+# <video width="960" height="540" controls>
+#   <source src="{0}">
+# </video>
+# # """.format(output))
 
 
 
@@ -422,27 +424,27 @@ for test_image_path in test_images_path:
 
 
     plt.figure(figsize=(20,10))
-    plt.subplot(1, 2, 1)
-    plt.imshow(undist_test_image)
-    out, Minv, src, dst = perspective_transform(undist_test_image)
+    # plt.subplot(1, 2, 1)
+    # plt.imshow(undist_test_image)
+    # out, Minv, src, dst = perspective_transform(undist_test_image)
 
-    src_poly = [[src[0][0], src[1][0], src[2][0], src[3][0], src[0][0]], [src[0][1], src[1][1], src[2][1], src[3][1], src[0][1]]]
+    # src_poly = [[src[0][0], src[1][0], src[2][0], src[3][0], src[0][0]], [src[0][1], src[1][1], src[2][1], src[3][1], src[0][1]]]
 
-    src_plot = plt.plot(src_poly[0], src_poly[1])
-    plt.xlabel('Original image')
-    plt.xticks([], [])
-    plt.yticks([], [])
-    plt.subplot(1, 2, 2)
-    plt.imshow(out)
+    # src_plot = plt.plot(src_poly[0], src_poly[1])
+    # plt.xlabel('Original image')
+    # plt.xticks([], [])
+    # plt.yticks([], [])
+    # plt.subplot(1, 2, 2)
+    out = process_image(undist_test_image)
+    # plt.imshow(out)
 
-    dst_poly = [[dst[0][0], dst[1][0], dst[2][0], dst[3][0], dst[0][0]], [dst[0][1], dst[1][1], dst[2][1], dst[3][1], dst[0][1]]]
-
-    dst_plot = plt.plot(dst_poly[0], dst_poly[1])
-    plt.xlabel('Perspective transformed image')
-    plt.xticks([], [])
-    plt.yticks([], [])
-    plt.setp(src_plot, color='r', linewidth=2.0)
-    plt.setp(dst_plot, color='r', linewidth=2.0)
+    # dst_poly = [[dst[0][0], dst[1][0], dst[2][0], dst[3][0], dst[0][0]], [dst[0][1], dst[1][1], dst[2][1], dst[3][1], dst[0][1]]]
+    # dst_plot = plt.plot(dst_poly[0], dst_poly[1])
+    # plt.xlabel('Perspective transformed image')
+    # plt.xticks([], [])
+    # plt.yticks([], [])
+    # plt.setp(src_plot, color='r', linewidth=2.0)
+    # plt.setp(dst_plot, color='r', linewidth=2.0)
 
     plt.show()
 
